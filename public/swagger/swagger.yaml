@@ -1,0 +1,739 @@
+openapi: 3.0.0
+info:
+  title: Healthcare Appointment Booking API
+  description:  Develop a RESTful API using PHP and Laravel that allows users to book, view, and cancel healthcare appointments. The API should interact with a MySQL database to store and retrieve data.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api/v1
+ # - url: "{{ config('app.url') }}"
+    description: 'Localhost address'
+tags:
+  - name: Auth
+    description: Operations about Authentication
+
+  - name: User
+    description: Operations about Users
+
+  - name: Healthcare Professional
+    description: Everything about your healthcare professional
+
+  - name: Appointment
+    description: Everything about your Appointment
+
+paths:
+  /healthcare-professionals:
+    get:
+      tags:
+        - Healthcare Professional
+      summary: Get All Healthcare Professionals
+      description: Get all healthcare professionals
+      operationId: getAllHealthcareProfessional
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search keyword (default empty string)
+        - in: query
+          name: pageIndex
+          schema:
+            type: integer
+            default: 0
+          description: Page index (default 0)
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 3
+          description: Page size (default 3)
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: name
+          description: Attribute to sort by (default 'name')
+        - in: query
+          name: sortDirection
+          schema:
+            type: string
+            default: ASC
+          description: Sort direction (default 'ASC')
+      responses:
+        '200':
+          description: Healthcare Professional All Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HealthcareProfessional"
+        '401':
+          description: Unauthenticated
+        "500":
+          description: Error
+      security:
+        - bearerAuth: []
+
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register
+      description: This can only be done by the register team member.
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: User Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "4|eULVXBa0VRtYc6C3ND5rZe0rvvhO7cUHh83B52jO"
+                      user:
+                        $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthorized Access
+        '405':
+          description: Validation exception
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Logs user into the system
+      description: ''
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: 'johndoie@gmail.com'
+                password:
+                  type: string
+                  format: password
+                  example: 'johndoie@123'
+      responses:
+        '200':
+          description: User Logged In Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "4|eULVXBa0VRtYc6C3ND5rZe0rvvhO7cUHh83B52jO"
+                      user:
+                        $ref: "#/components/schemas/User"
+        '403':
+          description: Invalid login details
+        '404':
+          description: Validation exception
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logs out current logged in user session
+      description: ''
+      operationId: logoutUser
+      parameters: []
+      responses:
+        '200':
+          description: User Logged Out Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+
+      security:
+          - bearerAuth: []
+  /auth/user:
+    get:
+      tags:
+        - Auth
+      summary: Get current user logged in
+      description: ''
+      operationId: getUser
+      parameters: []
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+          - bearerAuth: []
+  /users:
+    get:
+      tags:
+        - User
+      summary: Get All Users
+      description: Get all users with their associated tasks and users
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: User All Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        "500":
+          description: Error
+      security:
+        - bearerAuth: []
+    post:
+        tags:
+          - User
+        summary: Add a new user to the store
+        description: Add a new user to the store
+        operationId: storeUser
+        requestBody:
+          description: Create a new User in the store
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  password:
+                    type: string
+                    format: password
+        responses:
+          '201':
+            description: User Created
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                    message:
+                      type: string
+                    data:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/User"
+          '401':
+            description: Unauthenticated
+          '404':
+            description: User not found
+          '405':
+            description: Validation exception
+        security:
+          - bearerAuth: []
+
+  /users/{id}:
+    get:
+      tags:
+        - User
+      summary: Find users by ID
+      description: Returns a single user
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          description: ID of user to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - User
+      summary: Update an existing User
+      description: Update an existing User by Id
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of User to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent user in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    patch:
+      tags:
+        - User
+      summary: Update an existing User
+      description: Update an existing User by Id
+      operationId: updatePatchUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of User to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update an existent User in the store
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - User
+      summary: Deletes a user
+      description: delete a user
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          description: User id to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+
+  /appointment:
+    post:
+        tags:
+          - Appointment
+        summary: Book a new appointment to the store
+        description: Book a new appointments to the store
+        operationId: storeAppointment
+        requestBody:
+          description: Book a new appointment in the store
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthcare_professional_id:
+                    type: string
+                    format: uuid
+                  user_id:
+                    type: string
+                    format: uuid
+                  appointment_start_time:
+                    type: string
+                    format: date-time
+                  appointment_end_time:
+                    type: string
+                    format: date-time
+                  status:
+                    type: string
+                    description: Status
+                    example: booked
+                    enum:
+                      - booked
+                      - completed
+                      - cancelled
+                      - pending
+        responses:
+          '201':
+            description: Booked an appointment
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                    message:
+                      type: string
+                    data:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/Task"
+          '401':
+            description: Unauthenticated
+          '404':
+            description: Task not found
+          '405':
+            description: Validation exception
+        security:
+          - bearerAuth: []
+  /view-all-appointments-user:
+    get:
+      tags:
+        - Appointment
+      summary: View all appointments for a user.
+      description: Returns a single user all appointments
+      operationId: viewAllAppointmentsUser
+      parameters:
+        - name: id
+          in: path
+          description: ID of appointment to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Appointments Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Appointment"
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Appointments not found
+      security:
+        - bearerAuth: []
+
+  /cancel-appointments-user/{appointmentId}:
+    put:
+      tags:
+        - Appointment
+      summary: Cancel an appointment
+      description: Cancel an appointment
+      operationId: cancelanAppointment
+      parameters:
+        - name: id
+          in: path
+          description: ID of Appointment
+          required: true
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+        '200':
+          description: cancelled Appointment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Appointment"
+        '404':
+          description: Appointment not found
+        '405':
+          description: Validation exception
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        healthcare_professional_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        appointment_start_time:
+          type: string
+          format: time
+        appointment_end_time:
+          type: string
+          format: time
+        status:
+          type: string
+          description: Status
+          example: booked
+          enum:
+            - booked
+            - completed
+            - cancelled
+            - pending
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Jon Doe
+        email:
+          type: string
+          format: email
+          example: john@email.com
+        email_verified_at:
+          type: string
+          format: date-time
+        password:
+          type: string
+          format: password
+          example: '12345'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      xml:
+        name: user
+
+    HealthcareProfessional:
+      required:
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Healthcare professional name
+        specialty:
+          type: string
+          example: specialty
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      xml:
+        name: healthcareProfessional
+  requestBodies:
+    HealthcareProfessional:
+      description: Healthcare Professional object that needs to be added to the store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HealthcareProfessional'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/HealthcareProfessional'
+    UserArray:
+      description: List of user object
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
