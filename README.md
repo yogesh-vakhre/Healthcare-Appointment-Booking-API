@@ -58,7 +58,7 @@ chgrp -R www-data storage bootstrap/cache
 chmod -R ug+rwx storage bootstrap/cache
 ```
 
-Please find below demo Url for your refrence. 
+Please find below demo video Url for your refrence. 
 ```
 https://www.screenpresso.com/=qcy5b
 ```
